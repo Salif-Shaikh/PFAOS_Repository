@@ -1,0 +1,395 @@
+Q1
+A)
+import androidx.appcompat.app.AppCompatActivity;
+import android.os.Bundle;
+import android.util.Log;
+
+public class MainActivity extends AppCompatActivity {
+
+    private static final String TAG = "MainActivity";
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        Log.d(TAG, "onCreate() called");
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Log.d(TAG, "onStart() called");
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.d(TAG, "onResume() called");
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.d(TAG, "onPause() called");
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        Log.d(TAG, "onStop() called");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.d(TAG, "onDestroy() called");
+    }
+}
+
+ add the following code to the MainActivity class to handle button clicks:
+ 
+ import android.content.Intent;
+import android.view.View;
+import android.widget.Button;
+
+// in onCreate() method
+Button startSecondActivityButton = findViewById(R.id.start_second_activity_button);
+startSecondActivityButton.setOnClickListener(new View.OnClickListener() {
+    @Override
+    public void onClick(View v) {
+        Intent intent = new Intent(MainActivity.this, SecondActivity.class);
+        startActivity(intent);
+    }
+});
+
+Button showDialogButton = findViewById(R.id.show_dialog_button);
+showDialogButton.setOnClickListener(new View.OnClickListener() {
+    @Override
+    public void onClick(View v) {
+        DialogFragment dialog = new MyDialogFragment();
+        dialog.show(getSupportFragmentManager(), "MyDialogFragment");
+    }
+});
+
+B)
+
+dependencies {
+    // ...
+    implementation 'androidx.sqlite:sqlite:2.2.0'
+}
+
+
+public class Customer {
+    private int id;
+    private String name;
+    private String address;
+    private String phoneNumber;
+
+    public Customer(int id, String name, String address, String phoneNumber) {
+        this.id = id;
+        this.name = name;
+        this.address = address;
+        this.phoneNumber = phoneNumber;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+}
+
+public class CustomerDatabaseHelper extends SQLiteOpenHelper {
+    private static final String DATABASE_NAME = "customer.db";
+    private static final int DATABASE_VERSION = 1;
+
+    private static final String TABLE_NAME = "customer";
+    private static final String COLUMN_ID = "id";
+    private static final String COLUMN_NAME = "name";
+    private static final String COLUMN_ADDRESS = "address";
+    private static final String COLUMN_PHONE_NUMBER = "phone_number";
+
+    private static final String SQL_CREATE_TABLE =
+            "CREATE TABLE " + TABLE_NAME + " (" +
+            COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+            COLUMN_NAME + " TEXT NOT NULL, " +
+            COLUMN_ADDRESS + " TEXT, " +
+            COLUMN_PHONE_NUMBER + " TEXT)";
+
+    public CustomerDatabaseHelper(Context context) {
+        super(context, DATABASE_NAME, null, DATABASE_VERSION);
+    }
+
+    @Override
+    public void onCreate(SQLiteDatabase db) {
+        db.execSQL(SQL_CREATE_TABLE);
+    }
+
+    @Override
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        // not used in this example
+    }
+
+    public void insertCustomer(Customer customer) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_NAME, customer.getName());
+        values.put(COLUMN_ADDRESS, customer.getAddress());
+        values.put(COLUMN_PHONE_NUMBER, customer.getPhoneNumber());
+        db.insert(TABLE_NAME, null, values);
+        db.close();
+    }
+
+    public List<Customer> getAllCustomers() {
+        List<Customer> customers = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = db.query(TABLE_NAME, null, null, null, null, null, null);
+        if (cursor != null && cursor.moveToFirst()) {
+            do {
+                int id = cursor.getInt(cursor.getColumnIndex(COLUMN_ID));
+                String name = cursor.getString(cursor.getColumnIndex(COLUMN_NAME));
+                String address = cursor.getString(cursor.getColumnIndex(COLUMN_ADDRESS));
+                String phoneNumber = cursor.getString(cursor.getColumnIndex(COLUMN_PHONE_NUMBER));
+                Customer customer = new Customer(id, name, address, phoneNumber);
+                customers.add(customer);
+            } while (cursor.moveToNext());
+            cursor.close();
+        }
+        db.close();
+        return customers;
+    }
+}
+
+public class MainActivity extends AppCompatActivity {
+
+    private CustomerDatabaseHelper dbHelper;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        dbHelper = new CustomerDatabaseHelper(this);
+
+        Button insertButton = findViewById(R.id.insert_button
+    insertButton.setOnClickListener(new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            insertCustomer();
+        }
+    });
+
+    Button showButton = findViewById(R.id.show_button);
+    showButton.setOnClickListener(new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            showAllCustomers();
+        }
+    });
+}
+
+private void insertCustomer() {
+    EditText nameEditText = findViewById(R.id.name_edit_text);
+    EditText addressEditText = findViewById(R.id.address_edit_text);
+    EditText phoneNumberEditText = findViewById(R.id.phone_number_edit_text);
+
+    String name = nameEditText.getText().toString();
+    String address = addressEditText.getText().toString();
+    String phoneNumber = phoneNumberEditText.getText().toString();
+
+    if (name.isEmpty()) {
+        Toast.makeText(this, "Please enter a name", Toast.LENGTH_SHORT).show();
+        return;
+    }
+
+    Customer customer = new Customer(0, name, address, phoneNumber);
+    dbHelper.insertCustomer(customer);
+
+    Toast.makeText(this, "Customer inserted successfully", Toast.LENGTH_SHORT).show();
+
+    nameEditText.setText("");
+    addressEditText.setText("");
+    phoneNumberEditText.setText("");
+}
+
+private void showAllCustomers() {
+    List<Customer> customers = dbHelper.getAllCustomers();
+
+    if (customers.isEmpty()) {
+        Toast.makeText(this, "No customers found", Toast.LENGTH_SHORT).show();
+        return;
+    }
+
+    StringBuilder sb = new StringBuilder();
+    for (Customer customer : customers) {
+        sb.append(customer.getName()).append(", ")
+          .append(customer.getAddress()).append(", ")
+          .append(customer.getPhoneNumber()).append("\n");
+    }
+
+    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    builder.setTitle("All Customers");
+    builder.setMessage(sb.toString());
+    builder.setPositiveButton("OK", null);
+    builder.show();
+}
+
+
+5. Finally, create a layout file called `activity_main.xml` to define the user interface for the `MainActivity`:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:text="Insert New Customer"
+        android:textSize="24sp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:layout_marginTop="32dp"
+        android:layout_marginBottom="16dp"/>
+
+    <EditText
+        android:id="@+id/name_edit_text"
+        android:hint="Name"
+        android:inputType="text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="8dp"/>
+
+    <EditText
+        android:id="@+id/address_edit_text"
+        android:hint="Address"
+        android:inputType="textPostalAddress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="8dp"/>
+
+    <EditText
+        android:id="@+id/phone_number_edit_text"
+        android:hint="Phone Number"
+        android:inputType="phone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"/>
+
+    <Button
+        android:id="@+id/insert_button"
+        android:text="Insert"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center_horizontal"/>
+
+<TextView
+    android:text="Show All Customers"
+    android:textSize="24sp"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_horizontal"
+    android:layout_marginTop="32dp"
+    android:layout_marginBottom="16dp"/>
+
+<Button
+    android:id="@+id/show_button"
+    android:text="Show"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center_horizontal"/>
+
+Q2
+A)
+#include <stdio.h>
+#include <unistd.h>
+
+int main() {
+    char filename[256];
+    printf("Enter filename: ");
+    scanf("%s", filename);
+
+    if (access(filename, F_OK) != -1) {
+        printf("File '%s' exists in the current directory\n", filename);
+    } else {
+        printf("File '%s' does not exist in the current directory\n", filename);
+    }
+
+    return 0;
+}
+
+B)
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <unistd.h>
+
+void signal_handler(int sig) {
+    printf("Received signal %d\n", sig);
+    exit(0);
+}
+
+int main() {
+    sigset_t mask, oldmask, pending;
+    struct sigaction sa;
+    int sig;
+
+    // Set up signal handler for SIGQUIT
+    sa.sa_handler = signal_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    if (sigaction(SIGQUIT, &sa, NULL) == -1) {
+        perror("sigaction");
+        exit(1);
+    }
+
+    // Block SIGQUIT for 5 seconds
+    sigemptyset(&mask);
+    sigaddset(&mask, SIGQUIT);
+    if (sigprocmask(SIG_BLOCK, &mask, &oldmask) == -1) {
+        perror("sigprocmask");
+        exit(1);
+    }
+    printf("Blocked SIGQUIT for 5 seconds\n");
+    sleep(5);
+
+    // Check for any occurrence of SIGQUIT during this period
+    if (sigpending(&pending) == -1) {
+        perror("sigpending");
+        exit(1);
+    }
+    if (sigismember(&pending, SIGQUIT)) {
+        printf("Received SIGQUIT during blocked period\n");
+        sigdelset(&oldmask, SIGQUIT);
+        if (sigprocmask(SIG_SETMASK, &oldmask, NULL) == -1) {
+            perror("sigprocmask");
+            exit(1);
+        }
+    }
+
+    // Wait for another occurrence of SIGQUIT to terminate program
+    while (1) {
+        sigwait(&mask, &sig);
+        printf("Received SIGQUIT, terminating program\n");
+        exit(0);
+    }
+
+    return 0;
+}
