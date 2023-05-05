@@ -1,0 +1,33 @@
+Q9:
+#include<stdio.h>
+#include<unistd.h>
+#include<stdlib.h>
+#include<sys/wait.h>
+#define MESSAGE_BLOCK_SIZE 20
+void main(){
+int fd[2];
+char message1[MESSAGE_BLOCK_SIZE] = "Hello World";
+char message2[MESSAGE_BLOCK_SIZE] = "Hello SPPU";
+char message3[MESSAGE_BLOCK_SIZE] = "Linux is Funny";
+
+char message[MESSAGE_BLOCK_SIZE];
+if(pipe(fd) < 0){
+printf("Error creating pipe\n");
+exit(1);
+}
+int pid = fork();
+if(pid == 0){
+write(fd[1], message1, MESSAGE_BLOCK_SIZE);
+write(fd[1], message2, MESSAGE_BLOCK_SIZE);
+write(fd[1], message3, MESSAGE_BLOCK_SIZE);
+exit(0);
+}
+int status;
+while(wait(&status) > 0);
+read(fd[0], message, MESSAGE_BLOCK_SIZE);
+printf("%s\n", message);
+read(fd[0], message, MESSAGE_BLOCK_SIZE);
+printf("%s\n", message);
+read(fd[0], message, MESSAGE_BLOCK_SIZE);
+printf("%s\n", message);
+}

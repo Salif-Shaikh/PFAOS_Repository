@@ -1,0 +1,79 @@
+Q10.
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
+volatile int sigid = 0;
+// function declaration
+void sighup(int sig);
+void sigint(int sig);
+void sigquit(int sig);
+// driver code
+
+void main()
+{
+int pid, timeCounter;
+pid = fork();
+if (pid < 0) {
+perror("fork");
+exit(1);
+}
+if (pid == 0) { /* child */
+signal(SIGHUP, sighup);
+signal(SIGINT, sigint);
+signal(SIGQUIT, sigquit);
+while(1){/* loop for ever */
+if(sigid == SIGHUP){
+printf("CHILD: I have received a SIGHUP\n");
+sigid = 0;
+continue;
+} else if(sigid == SIGINT){
+printf("CHILD: I have received a SIGINT\n");
+sigid = 0;
+continue;
+} else if(sigid == SIGQUIT){
+printf("My Daddy has killed me!!!\n");
+sigid = 0;
+break;
+}
+}
+exit(0);
+}
+sleep(1);
+fflush(stdout);
+
+while(1){
+printf("\nPARENT: sending SIGHUP to process : %d\n\n", pid);
+kill(pid, SIGHUP);
+timeCounter+=3;
+if(timeCounter > 15){
+break;
+}
+sleep(3); /* pause for 3 secs */
+printf("\nPARENT: sending SIGINT to process : %d\n\n", pid);
+kill(pid, SIGINT);
+timeCounter+=3;
+if(timeCounter > 15){
+break;
+}
+sleep(3); /* pause for 3 secs */
+}
+printf("\nPARENT: sending SIGQUIT to process : %d\n\n", pid);
+usleep(10000);
+kill(pid, SIGQUIT);
+sleep(1);
+}
+void sighup(int sig)
+{
+sigid = SIGHUP;
+}
+void sigint(int sig)
+{
+sigid = SIGINT;
+}
+void sigquit(int sig)
+{
+
+sigid = SIGQUIT;
+}

@@ -1,0 +1,25 @@
+Q1.
+#include<stdio.h>
+#include<dirent.h>
+#include<string.h>
+#include<unistd.h>
+int file_exist(char *filename)
+{
+FILE *fp = fopen(filename, “r”);
+if (fp)
+{
+return 1;
+} else {
+return 0;
+}
+}
+void main()
+{
+int N = file_exist(“abc.txt”);
+if (N == 1){
+printf(“file does exist in current directory”);
+}
+else{
+
+printf(“file does not exist in current directory”);
+}

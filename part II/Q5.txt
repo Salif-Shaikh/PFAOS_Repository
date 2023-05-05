@@ -1,0 +1,14 @@
+Q5.
+#include<stdio.h>
+#include<stdlib.h>
+#include<fcntl.h>
+#include<unistd.h>
+void main(){
+int fd;
+fd = open("output.txt",O_CREAT| O_WRONLY, 0777);
+close(STDOUT_FILENO);
+dup(fd);
+printf("this is some text to be printed on the screen\n");
+
+printf("but it will be written to the file output.txt\n");
+}

@@ -1,0 +1,13 @@
+Q11.
+#include<stdio.h>
+#include<stdlib.h>
+#include<signal.h>
+#include<unistd.h>
+void sigint(){
+write(STDOUT_FILENO, "Press Ctrl + C once again to exit", 33);
+signal(SIGINT, SIG_DFL);
+}
+void main(){
+signal(SIGINT, sigint);
+while(1);
+}

@@ -1,0 +1,20 @@
+Q1.
+#include<stdio.h>
+#include<alloca.h>
+void main(){
+int i, n;
+int *a;
+printf("Enter the number of elements : ");
+scanf("%d",&n);
+a = (int*) alloca(n * sizeof(int));
+printf("Enter %d elements...\n", n);
+for(i=0; i< n;i++){
+printf("%d : ", i);
+scanf("%d",&a[i]);
+}
+printf("You entered...\n");
+for(i = 0; i < n; i++){
+printf("%d\t", a[i]);
+}
+printf("\n");
+}

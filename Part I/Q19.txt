@@ -1,0 +1,19 @@
+Q19:
+#include<malloc.h>
+#include<stdio.h>
+void main(){
+struct mallinfo minfo;
+minfo = mallinfo();
+printf("Memory Allocation Statistics \n");
+printf("Non-mmapped space allocated (bytes) : %d\n", minfo.arena);
+printf("Number of free chunks : %d\n", minfo.ordblks);
+
+printf("Number of free fastbin blocks : %d\n", minfo.smblks);
+printf("Number of mmapped regions : %d\n", minfo.hblks);
+printf("Space allocated in mmapped regions (bytes) : %d\n", minfo.hblkhd);
+printf("Maximum total allocated space (bytes) : %d\n", minfo.usmblks);
+printf("Space in freed fastbin blocks (bytes) : %d\n", minfo.fsmblks);
+printf("Total allocated space (bytes) : %d\n", minfo.uordblks);
+printf("Total free space (bytes) : %d\n", minfo.fordblks);
+printf("Top-most, releasable space (bytes) : %d\n", minfo.keepcost);
+}

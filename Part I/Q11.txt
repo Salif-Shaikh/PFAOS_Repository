@@ -1,0 +1,35 @@
+Q11:
+#include<stdio.h>
+#include<stdlib.h>
+
+#include<fcntl.h>
+#include<sys/mman.h>
+#include<sys/stat.h>
+#define BUFFER_SIZE 100
+int main(int argc, char const *argv[])
+{
+if(argc != 2){
+fprintf(stderr, "Please pass file name\n");
+return 1;
+}
+char *addr;
+char buffer[BUFFER_SIZE];
+int fd = open(argv[1], O_RDONLY);
+struct stat st;
+if(fstat(fd, &st) < 0){
+fprintf(stderr, "Error reading file info\n");
+return 1;
+}
+if((addr = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0))
+== MAP_FAILED){
+fprintf(stderr, "Error mapping file\n");
+return 1;
+}
+for(int i = st.st_size; i >= 0; i--){
+printf("%c", addr[i]);
+
+}
+munmap(addr);
+close(fd);
+return 0;
+}

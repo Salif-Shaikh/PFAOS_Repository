@@ -1,0 +1,17 @@
+Q17.
+
+#include<stdio.h>
+#include<stdlib.h>
+void main() {
+FILE *fp1, *fp2;
+char ch;
+fp1 = fopen("file1.txt", "r");
+fp2 = fopen("file2.txt", "w");
+while ((ch = fgetc(fp1)) != EOF) {
+putc(ch, fp2);
+}
+printf("File copied Successfully!");
+fclose(fp1);
+fclose(fp2);
+remove("file1.txt");
+}

@@ -1,0 +1,32 @@
+Q3:
+#include <stdio.h>
+#include <dirent.h>
+#include<string.h>
+#include<unistd.h>
+void main(int argc, char *argv[])
+{
+struct dirent *de;
+if(argc != 2){
+fprintf(stderr, "usage : %s <search string>\n", argv[0]);
+return;
+}
+DIR *directory = opendir(".");
+char **filenames;
+if (directory == NULL)
+{
+printf("Could not open current directory" );
+return;
+}
+char *searchOut;
+
+rewinddir(directory);
+while ((de = readdir(directory)) != NULL)
+if(strcmp(de->d_name,".") != 0 && strcmp(de->d_name,"..")){
+searchOut = strstr(de->d_name, argv[1]);
+int index = searchOut - de->d_name;
+if(index == 0){
+printf("%s\n", de->d_name);
+}
+}
+closedir(directory);
+}

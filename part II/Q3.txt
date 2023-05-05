@@ -1,0 +1,26 @@
+Q3.
+#include <signal.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <signal.h>
+#include <stdlib.h>
+void catch(int);
+int main (void) {
+pid_t pid;
+pid = fork();
+if(pid < 0){
+fprintf(stderr, "Error in fork execution\n");
+return 1;
+}
+
+if (pid != 0){
+signal(SIGALRM,catch);
+pause();
+} else{
+kill(getppid(),SIGALRM);
+}
+return 0;
+}
+void catch(int signo) {
+write(STDOUT_FILENO, "alarm is fired\n", 15);
+}

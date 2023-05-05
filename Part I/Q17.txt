@@ -1,0 +1,19 @@
+Q17:
+
+#include <stdio.h>
+#include <stdlib.h>
+int main () {
+printf("Old Environment variables\n");
+
+printf("PATH : %s\n", getenv("PATH"));
+printf("HOME : %s\n", getenv("HOME"));
+printf("ROOT : %s\n", getenv("ROOT"));
+setenv("PATH","",1);
+setenv("HOME","",1);
+setenv("ROOT","",1);
+printf("New Environment variables\n");
+printf("PATH : %s\n", getenv("PATH"));
+printf("HOME : %s\n", getenv("HOME"));
+printf("ROOT : %s\n", getenv("ROOT"));
+return(0);
+}

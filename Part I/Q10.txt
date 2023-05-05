@@ -1,0 +1,53 @@
+Q10:
+#include <stdio.h>
+#include <dirent.h>
+#include<string.h>
+
+#include<unistd.h>
+#include<fcntl.h>
+#include<sys/types.h>
+#include<sys/stat.h>
+int doesEndWithTxt(char *string){
+char *substr = ".txt";
+int length = 4;
+int lengthLong = strlen(string) - 1;
+int doesEnd = 1;
+while(length--){
+if(string[lengthLong] != substr[length]){
+doesEnd = 0;
+break;
+}
+lengthLong--;
+}
+return doesEnd;
+}
+void main(int argc, char *argv[])
+{
+struct dirent *de;
+DIR *directory = opendir(".");
+char **filenames;
+if (directory == NULL)
+{
+
+printf("Could not open current directory" );
+return;
+}
+int mergedfd = open("merged.txt", O_CREAT|O_WRONLY, S_IRUSR |
+S_IWUSR);
+char block[8];
+while ((de = readdir(directory)) != NULL)
+if(strcmp(de->d_name,".") != 0 && strcmp(de->d_name,"..")){
+if(strlen(de->d_name) > 4 && doesEndWithTxt(de->d_name)){
+printf("%s\n", de->d_name);
+int fd = open(de->d_name, O_RDONLY);
+while(read(fd, block, 8) > 0){
+write(mergedfd, block, 8);
+}
+close(fd);
+}
+}
+printf("Merged file : merged.txt\n");
+printf("file descriptor : %d\n", mergedfd);
+close(mergedfd);
+closedir(directory);
+}
