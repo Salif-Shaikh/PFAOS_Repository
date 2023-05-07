@@ -1,0 +1,121 @@
+A)
+#include <stdio.h>
+#include <stdlib.h>
+
+void display_environment_variable(const char *var_name) {
+    char *value = getenv(var_name);
+    if (value != NULL) {
+        printf("%s=%s\n", var_name, value);
+    } else {
+        printf("%s is not set.\n", var_name);
+    }
+}
+
+void reset_environment_variable(const char *var_name, const char *new_value) {
+    if (setenv(var_name, new_value, 1) == -1) {
+        perror("setenv");
+        return;
+    }
+
+    printf("%s has been set to %s.\n", var_name, new_value);
+}
+
+void unset_environment_variable(const char *var_name) {
+    if (unsetenv(var_name) == -1) {
+        perror("unsetenv");
+        return;
+    }
+
+    printf("%s has been unset.\n", var_name);
+}
+
+int main() {
+    // Display environment variables
+    printf("Current Environment Variables:\n");
+    display_environment_variable("PATH");
+    display_environment_variable("HOME");
+    display_environment_variable("ROOT");
+
+    // Reset environment variables
+    printf("\nResetting Environment Variables:\n");
+    reset_environment_variable("PATH", "/usr/local/bin");
+    reset_environment_variable("HOME", "/home/user");
+    reset_environment_variable("ROOT", "/");
+
+    // Display updated environment variables
+    printf("\nUpdated Environment Variables:\n");
+    display_environment_variable("PATH");
+    display_environment_variable("HOME");
+    display_environment_variable("ROOT");
+
+    // Unset environment variables
+    printf("\nUnsetting Environment Variables:\n");
+    unset_environment_variable("PATH");
+    unset_environment_variable("HOME");
+    unset_environment_variable("ROOT");
+
+    // Display after unsetting
+    printf("\nAfter Unsetting Environment Variables:\n");
+    display_environment_variable("PATH");
+    display_environment_variable("HOME");
+    display_environment_variable("ROOT");
+
+    return 0;
+}
+B)
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <dirent.h>
+
+int is_directory(const char *path) {
+    struct stat statbuf;
+    if (stat(path, &statbuf) == -1) {
+        return 0;
+    }
+    return S_ISDIR(statbuf.st_mode);
+}
+
+int compare(const void *a, const void *b) {
+    return strcmp(*(const char **)a, *(const char **)b);
+}
+
+void list_subdirectories() {
+    DIR *dir;
+    struct dirent *entry;
+    char **subdirectories = NULL;
+    int num_subdirectories = 0;
+
+    dir = opendir(".");
+    if (dir == NULL) {
+        perror("opendir");
+        return;
+    }
+
+    while ((entry = readdir(dir)) != NULL) {
+        if (is_directory(entry->d_name)) {
+            if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
+                subdirectories = realloc(subdirectories, (num_subdirectories + 1) * sizeof(char *));
+                subdirectories[num_subdirectories] = strdup(entry->d_name);
+                num_subdirectories++;
+            }
+        }
+    }
+
+    closedir(dir);
+
+    qsort(subdirectories, num_subdirectories, sizeof(char *), compare);
+
+    printf("Subdirectories:\n");
+    for (int i = 0; i < num_subdirectories; i++) {
+        printf("%s\n", subdirectories[i]);
+        free(subdirectories[i]);
+    }
+
+    free(subdirectories);
+}
+
+int main() {
+    list_subdirectories();
+    return 0;
+}

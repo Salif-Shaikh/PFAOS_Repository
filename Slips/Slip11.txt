@@ -1,0 +1,145 @@
+A)
+#include <stdio.h>
+#include <alloca.h>
+
+int main() {
+    int n;
+
+    printf("Enter the size of the array: ");
+    scanf("%d", &n);
+
+    int *array = alloca(n * sizeof(int));
+
+    printf("Enter %d elements:\n", n);
+    for (int i = 0; i < n; i++) {
+        scanf("%d", &array[i]);
+    }
+
+    printf("Elements in the array:\n");
+    for (int i = 0; i < n; i++) {
+        printf("%d ", array[i]);
+    }
+    printf("\n");
+
+    return 0;
+}
+B)
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+#define MAX_COMMAND_LENGTH 100
+#define MAX_ARGUMENTS 10
+
+void execute_command(char *command) {
+    char *arguments[MAX_ARGUMENTS];
+    int num_arguments = 0;
+
+    // Tokenize the command
+    char *token = strtok(command, " \t\n");
+    while (token != NULL && num_arguments < MAX_ARGUMENTS - 1) {
+        arguments[num_arguments] = token;
+        num_arguments++;
+        token = strtok(NULL, " \t\n");
+    }
+    arguments[num_arguments] = NULL;
+
+    // Check if it's a special command
+    if (num_arguments >= 3 && strcmp(arguments[0], "count") == 0) {
+        if (strcmp(arguments[1], "c") == 0) {
+            // count c <filename>: Print number of characters in file
+            FILE *file = fopen(arguments[2], "r");
+            if (file == NULL) {
+                perror("fopen");
+                return;
+            }
+
+            int count = 0;
+            int ch;
+            while ((ch = fgetc(file)) != EOF) {
+                count++;
+            }
+
+            printf("Number of characters in file: %d\n", count);
+
+            fclose(file);
+        } else if (strcmp(arguments[1], "w") == 0) {
+            // count w <filename>: Print number of words in file
+            FILE *file = fopen(arguments[2], "r");
+            if (file == NULL) {
+                perror("fopen");
+                return;
+            }
+
+            int count = 0;
+            int in_word = 0;
+            int ch;
+            while ((ch = fgetc(file)) != EOF) {
+                if (ch == ' ' || ch == '\t' || ch == '\n') {
+                    in_word = 0;
+                } else if (in_word == 0) {
+                    in_word = 1;
+                    count++;
+                }
+            }
+
+            printf("Number of words in file: %d\n", count);
+
+            fclose(file);
+        } else if (strcmp(arguments[1], "l") == 0) {
+            // count l <filename>: Print number of lines in file
+            FILE *file = fopen(arguments[2], "r");
+            if (file == NULL) {
+                perror("fopen");
+                return;
+            }
+
+            int count = 0;
+            int ch;
+            while ((ch = fgetc(file)) != EOF) {
+                if (ch == '\n') {
+                    count++;
+                }
+            }
+
+            printf("Number of lines in file: %d\n", count);
+
+            fclose(file);
+        } else {
+            printf("Invalid count command\n");
+        }
+    } else {
+        // Execute the command using fork and exec
+        pid_t pid = fork();
+        if (pid == -1) {
+            perror("fork");
+            return;
+        } else if (pid == 0) {
+            // Child process
+            execvp(arguments[0], arguments);
+            perror("execvp");
+            exit(1);
+        } else {
+            // Parent process
+            int status;
+            waitpid(pid, &status, 0);
+        }
+    }
+}
+
+int main() {
+    char command[MAX_COMMAND_LENGTH];
+
+    while (1) {
+        printf("NewShell$ ");
+        if (fgets(command, sizeof(command), stdin) == NULL) {
+            break;
+        }
+
+        execute_command(command);
+    }
+
+    return 0;
+}

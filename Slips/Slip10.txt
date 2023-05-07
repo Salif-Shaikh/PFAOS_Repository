@@ -1,0 +1,69 @@
+A)
+#include <stdio.h>
+#include <malloc.h>
+
+int main() {
+    struct mallinfo info = mallinfo();
+
+    printf("Memory Allocation Statistics:\n");
+    printf("Total non-mmapped bytes (arena): %d\n", info.arena);
+    printf("Number of free chunks (ordblks): %d\n", info.ordblks);
+    printf("Number of free fastbin blocks (smblks): %d\n", info.smblks);
+    printf("Number of mapped regions (hblks): %d\n", info.hblks);
+    printf("Bytes in mapped regions (hblkhd): %d\n", info.hblkhd);
+    printf("Maximum total allocated space (usmblks): %d\n", info.usmblks);
+    printf("Free bytes held in fastbins (fsmblks): %d\n", info.fsmblks);
+    printf("Total allocated space (uordblks): %d\n", info.uordblks);
+    printf("Total free space (fordblks): %d\n", info.fordblks);
+    printf("Top-most, releasable space (keepcost): %d\n", info.keepcost);
+
+    return 0;
+}
+B)
+
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+int main() {
+    // Create the first file with read and write permission for owner, group, and others
+    int fd1 = open("file1.txt", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+    if (fd1 == -1) {
+        perror("open");
+        return 1;
+    }
+    
+    // Set group-id and turn off group execute permission for the first file
+    if (fchmod(fd1, S_ISGID | S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH) == -1) {
+        perror("fchmod");
+        return 1;
+    }
+
+    // Create the second file with read and write permission for owner, using umask to control group and others permission
+    umask(S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH); // Set umask to restrict group and others permission
+    int fd2 = open("file2.txt", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+    if (fd2 == -1) {
+        perror("open");
+        return 1;
+    }
+
+    // Set read permission for all users for the second file
+    if (chmod("file2.txt", S_IRUSR | S_IRGRP | S_IROTH) == -1) {
+        perror("chmod");
+        return 1;
+    }
+
+    // Close the files
+    if (close(fd1) == -1) {
+        perror("close");
+        return 1;
+    }
+    if (close(fd2) == -1) {
+        perror("close");
+        return 1;
+    }
+
+    return 0;
+}

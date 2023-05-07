@@ -1,0 +1,106 @@
+A)
+#include <stdio.h>
+#include <stdlib.h>
+#include <dirent.h>
+#include <string.h>
+
+void getMatchingFiles(const char *dirPath, const char *prefix) {
+    DIR *dir = opendir(dirPath);
+    if (dir == NULL) {
+        printf("Error opening directory %s\n", dirPath);
+        return;
+    }
+
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL) {
+        if (entry->d_type == DT_REG && strncmp(entry->d_name, prefix, strlen(prefix)) == 0) {
+            printf("%s\n", entry->d_name);
+        }
+    }
+
+    closedir(dir);
+}
+
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        printf("Usage: %s <prefix>\n", argv[0]);
+        return 1;
+    }
+
+    char *prefix = argv[1];
+    getMatchingFiles(".", prefix);
+
+    return 0;
+}
+
+B)
+#include <stdio.h>
+#include <setjmp.h>
+
+jmp_buf buf;
+
+// Global variable
+int globalVar = 0;
+
+void changeVariables() {
+    // Automatic variable
+    int autoVar = 1;
+
+    // Register variable
+    register int regVar = 2;
+
+    // Static variable
+    static int staticVar = 3;
+
+    // Volatile variable
+    volatile int volatileVar = 4;
+
+    printf("Initial values:\n");
+    printf("Global Variable: %d\n", globalVar);
+    printf("Automatic Variable: %d\n", autoVar);
+    printf("Register Variable: %d\n", regVar);
+    printf("Static Variable: %d\n", staticVar);
+    printf("Volatile Variable: %d\n", volatileVar);
+
+    // Modify the values
+    globalVar = 10;
+    autoVar = 11;
+    regVar = 12;
+    staticVar = 13;
+    volatileVar = 14;
+
+    // Print the modified values
+    printf("\nModified values:\n");
+    printf("Global Variable: %d\n", globalVar);
+    printf("Automatic Variable: %d\n", autoVar);
+    printf("Register Variable: %d\n", regVar);
+    printf("Static Variable: %d\n", staticVar);
+    printf("Volatile Variable: %d\n", volatileVar);
+
+    // Use setjmp to save the execution context
+    if (setjmp(buf) != 0) {
+        // Print the values after longjmp
+        printf("\nAfter longjmp:\n");
+        printf("Global Variable: %d\n", globalVar);
+        printf("Automatic Variable: %d\n", autoVar);
+        printf("Register Variable: %d\n", regVar);
+        printf("Static Variable: %d\n", staticVar);
+        printf("Volatile Variable: %d\n", volatileVar);
+        return;
+    }
+
+    // Change the values again
+    globalVar = 20;
+    autoVar = 21;
+    regVar = 22;
+    staticVar = 23;
+    volatileVar = 24;
+
+    // Use longjmp to restore the saved execution context
+    longjmp(buf, 1);
+}
+
+int main() {
+    changeVariables();
+    return 0;
+}

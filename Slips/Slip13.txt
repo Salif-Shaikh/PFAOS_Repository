@@ -1,0 +1,158 @@
+A)
+#include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+int main() {
+    // Open the file "output.txt" for writing
+    int file_fd = open("output.txt", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (file_fd == -1) {
+        perror("open");
+        return 1;
+    }
+
+    // Save the current standard output file descriptor
+    int stdout_fd = dup(STDOUT_FILENO);
+
+    // Redirect standard output to the file
+    if (dup2(file_fd, STDOUT_FILENO) == -1) {
+        perror("dup2");
+        return 1;
+    }
+
+    // Close the file descriptor opened for the file
+    close(file_fd);
+
+    // Now, any subsequent writes to standard output will go to the file "output.txt"
+
+    // Example: Writing to standard output
+    printf("This will be written to the file 'output.txt'\n");
+
+    // Restore the original standard output file descriptor
+    if (dup2(stdout_fd, STDOUT_FILENO) == -1) {
+        perror("dup2");
+        return 1;
+    }
+
+    // Close the duplicated standard output file descriptor
+    close(stdout_fd);
+
+    // Now, any subsequent writes to standard output will go back to the console
+
+    // Example: Writing to standard output after redirection is restored
+    printf("This will be written to the console\n");
+
+    return 0;
+}
+B)
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+#define MAX_COMMAND_LENGTH 1024
+
+void execute_command(char *command) {
+    // Tokenize the command string
+    char *args[MAX_COMMAND_LENGTH];
+    int num_args = 0;
+    char *token = strtok(command, " \t\n");
+    while (token != NULL) {
+        args[num_args] = token;
+        num_args++;
+        token = strtok(NULL, " \t\n");
+    }
+    args[num_args] = NULL;
+
+    // Check for special commands
+    if (strcmp(args[0], "typeline") == 0) {
+        if (num_args != 3) {
+            printf("Invalid typeline command\n");
+            return;
+        }
+
+        int lines_to_print = atoi(args[1]);
+        char *filename = args[2];
+
+        FILE *file = fopen(filename, "r");
+        if (file == NULL) {
+            perror("fopen");
+            return;
+        }
+
+        char line[MAX_COMMAND_LENGTH];
+        int line_count = 0;
+
+        // Print first 'lines_to_print' lines of the file
+        if (lines_to_print > 0) {
+            while (fgets(line, sizeof(line), file) != NULL && line_count < lines_to_print) {
+                printf("%s", line);
+                line_count++;
+            }
+        }
+        // Print last 'lines_to_print' lines of the file
+        else if (lines_to_print < 0) {
+            // Read all lines into a circular buffer
+            char *lines_buffer[-lines_to_print];
+            int buffer_size = -lines_to_print;
+            int next_line_index = 0;
+            while (fgets(line, sizeof(line), file) != NULL) {
+                strncpy(lines_buffer[next_line_index], line, sizeof(line));
+                next_line_index = (next_line_index + 1) % buffer_size;
+            }
+
+            // Print the lines in the circular buffer
+            int start_line_index = next_line_index;
+            int lines_printed = 0;
+            while (lines_printed < buffer_size) {
+                printf("%s", lines_buffer[start_line_index]);
+                start_line_index = (start_line_index + 1) % buffer_size;
+                lines_printed++;
+            }
+        }
+        // Print all lines of the file
+        else {
+            while (fgets(line, sizeof(line), file) != NULL) {
+                printf("%s", line);
+            }
+        }
+
+        fclose(file);
+    } else {
+        // Execute the command as a normal shell command
+        pid_t pid = fork();
+        if (pid == -1) {
+            perror("fork");
+            return;
+        } else if (pid == 0) {
+            // Child process
+            execvp(args[0], args);
+            perror("execvp");
+            exit(1);
+        } else {
+            // Parent process
+            int status;
+            waitpid(pid, &status, 0);
+        }
+    }
+}
+
+int main() {
+    char command[MAX_COMMAND_LENGTH];
+
+    while (1) {
+        printf("NewShell$ ");
+        fflush(stdout);
+
+        if (fgets(command, sizeof(command), stdin) == NULL) {
+            break;
+        }
+
+        execute_command(command);
+    }
+
+    return 0;
+}
+

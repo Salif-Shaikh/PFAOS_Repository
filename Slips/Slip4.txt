@@ -1,0 +1,156 @@
+A)
+#include <stdio.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+void printFileProperties(int fileDescriptor) {
+    struct stat fileStat;
+
+    // Use fstat() to retrieve file properties
+    if (fstat(fileDescriptor, &fileStat) < 0) {
+        perror("fstat");
+        return;
+    }
+
+    printf("File Descriptor: %d\n", fileDescriptor);
+    printf("Inode number: %ld\n", fileStat.st_ino);
+    printf("Number of hard links: %ld\n", fileStat.st_nlink);
+    printf("File size: %ld bytes\n", fileStat.st_size);
+
+    printf("File permissions: ");
+    printf((S_ISDIR(fileStat.st_mode)) ? "d" : "-");
+    printf((fileStat.st_mode & S_IRUSR) ? "r" : "-");
+    printf((fileStat.st_mode & S_IWUSR) ? "w" : "-");
+    printf((fileStat.st_mode & S_IXUSR) ? "x" : "-");
+    printf((fileStat.st_mode & S_IRGRP) ? "r" : "-");
+    printf((fileStat.st_mode & S_IWGRP) ? "w" : "-");
+    printf((fileStat.st_mode & S_IXGRP) ? "x" : "-");
+    printf((fileStat.st_mode & S_IROTH) ? "r" : "-");
+    printf((fileStat.st_mode & S_IWOTH) ? "w" : "-");
+    printf((fileStat.st_mode & S_IXOTH) ? "x" : "-");
+    printf("\n");
+
+    printf("Last access time: %ld\n", fileStat.st_atime);
+    printf("Last modification time: %ld\n", fileStat.st_mtime);
+    printf("Last status change time: %ld\n", fileStat.st_ctime);
+}
+
+int main() {
+    const char *filePath = "example.txt"; // Replace with your file path
+
+    int fileDescriptor = open(filePath, O_RDONLY);
+    if (fileDescriptor < 0) {
+        perror("open");
+        return 1;
+    }
+
+    printFileProperties(fileDescriptor);
+
+    close(fileDescriptor);
+
+    return 0;
+}
+B)
+Sure! Here's a C program that implements the `ls -l | wc -l` Unix/Linux command using `fork()`, `pipe()`, and `exec()` system calls. The program also blocks the Ctrl-C and Ctrl-\ signals during execution:
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <signal.h>
+#include <sys/wait.h>
+
+void handleSignal(int signum) {
+    // Empty signal handler
+}
+
+int main() {
+    // Block Ctrl-C and Ctrl-\ signals
+    signal(SIGINT, handleSignal);
+    signal(SIGQUIT, handleSignal);
+
+    int pipefd[2];
+    pid_t lsPid, wcPid;
+
+    // Create a pipe
+    if (pipe(pipefd) == -1) {
+        perror("pipe");
+        exit(1);
+    }
+
+    // Fork first child for ls command
+    lsPid = fork();
+
+    if (lsPid == -1) {
+        perror("fork");
+        exit(1);
+    } else if (lsPid == 0) {
+        // Child process - ls command
+
+        // Close the read end of the pipe
+        close(pipefd[0]);
+
+        // Duplicate stdout to the write end of the pipe
+        dup2(pipefd[1], STDOUT_FILENO);
+
+        // Close the write end of the pipe
+        close(pipefd[1]);
+
+        // Execute ls command
+        execlp("ls", "ls", "-l", NULL);
+
+        perror("execlp");
+        exit(1);
+    }
+
+    // Fork second child for wc command
+    wcPid = fork();
+
+    if (wcPid == -1) {
+        perror("fork");
+        exit(1);
+    } else if (wcPid == 0) {
+        // Child process - wc command
+
+        // Close the write end of the pipe
+        close(pipefd[1]);
+
+        // Duplicate stdin to the read end of the pipe
+        dup2(pipefd[0], STDIN_FILENO);
+
+        // Close the read end of the pipe
+        close(pipefd[0]);
+
+        // Execute wc command
+        execlp("wc", "wc", "-l", NULL);
+
+        perror("execlp");
+        exit(1);
+    }
+
+    // Close both ends of the pipe in the parent
+    close(pipefd[0]);
+    close(pipefd[1]);
+
+    // Wait for the ls command to finish
+    waitpid(lsPid, NULL, 0);
+
+    // Wait for the wc command to finish
+    waitpid(wcPid, NULL, 0);
+
+    return 0;
+}
+```
+
+In this program, we block the Ctrl-C and Ctrl-\ signals by registering an empty signal handler using the `signal()` function.
+
+We create a pipe using the `pipe()` system call to connect the standard output of the `ls` command to the standard input of the `wc` command.
+
+We fork the first child process to execute the `ls -l` command. The child process redirects its standard output to the write end of the pipe using `dup2()`, and then executes the `ls` command using `execlp()`.
+
+We fork the second child process to execute the `wc -l` command. The child process redirects its standard input to the read end of the pipe using `dup2()`, and then executes the `wc` command using `execlp()`.
+
+In the parent process, we close both ends of the pipe and wait for both child processes to finish using `waitpid()`.
+
+Compile and run the program. It will execute the `ls -l | wc -l` command, where the `ls` command lists the files in the current directory with detailed

@@ -1,0 +1,93 @@
+A)
+#include <stdio.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <time.h>
+
+void printFileProperties(const char *filePath) {
+    struct stat fileStat;
+
+    // Use stat() to retrieve file properties
+    if (stat(filePath, &fileStat) < 0) {
+        perror("stat");
+        return;
+    }
+
+    printf("File: %s\n", filePath);
+    printf("Inode number: %ld\n", fileStat.st_ino);
+    printf("Number of hard links: %ld\n", fileStat.st_nlink);
+    printf("File size: %ld bytes\n", fileStat.st_size);
+
+    printf("File permissions: ");
+    printf((S_ISDIR(fileStat.st_mode)) ? "d" : "-");
+    printf((fileStat.st_mode & S_IRUSR) ? "r" : "-");
+    printf((fileStat.st_mode & S_IWUSR) ? "w" : "-");
+    printf((fileStat.st_mode & S_IXUSR) ? "x" : "-");
+    printf((fileStat.st_mode & S_IRGRP) ? "r" : "-");
+    printf((fileStat.st_mode & S_IWGRP) ? "w" : "-");
+    printf((fileStat.st_mode & S_IXGRP) ? "x" : "-");
+    printf((fileStat.st_mode & S_IROTH) ? "r" : "-");
+    printf((fileStat.st_mode & S_IWOTH) ? "w" : "-");
+    printf((fileStat.st_mode & S_IXOTH) ? "x" : "-");
+    printf("\n");
+
+    printf("Last access time: %s", ctime(&fileStat.st_atime));
+    printf("Last modification time: %s", ctime(&fileStat.st_mtime));
+    printf("Last status change time: %s", ctime(&fileStat.st_ctime));
+}
+
+int main() {
+    const char *filePath = "example.txt"; // Replace with your file path
+
+    printFileProperties(filePath);
+
+    return 0;
+}
+B)
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/times.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+int main() {
+    int n = 5;  // Number of child processes
+    int status;
+    pid_t childPid;
+
+    clock_t startClock, endClock;
+    struct tms startTimes, endTimes;
+
+    startClock = times(&startTimes);  // Start time
+
+    for (int i = 0; i < n; i++) {
+        childPid = fork();
+
+        if (childPid < 0) {
+            perror("fork");
+            exit(1);
+        } else if (childPid == 0) {
+            // Child process
+            sleep(1);  // Simulate some work
+            exit(0);
+        }
+    }
+
+    // Wait for all child processes to terminate
+    while (n > 0) {
+        childPid = wait(&status);
+        if (childPid > 0)
+            n--;
+    }
+
+    endClock = times(&endTimes);  // End time
+
+    double totalUserTime = (double)(endTimes.tms_cutime - startTimes.tms_cutime) / sysconf(_SC_CLK_TCK);
+    double totalSysTime = (double)(endTimes.tms_cstime - startTimes.tms_cstime) / sysconf(_SC_CLK_TCK);
+
+    printf("Total cumulative user time: %.2f seconds\n", totalUserTime);
+    printf("Total cumulative system time: %.2f seconds\n", totalSysTime);
+
+    return 0;
+}

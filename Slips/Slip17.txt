@@ -1,0 +1,85 @@
+A)
+#include <stdio.h>
+#include <setjmp.h>
+
+jmp_buf jumpBuffer;
+int count = 0;
+
+void displayMessage(const char* message, int n);
+
+int main() {
+    if (setjmp(jumpBuffer) == 0) {
+        // Initial setjmp call
+        
+        // Display the message 5 times
+        displayMessage("Hello, World!", 5);
+    } else {
+        // Return from longjmp
+        
+        printf("Message display completed.\n");
+    }
+    
+    return 0;
+}
+
+void displayMessage(const char* message, int n) {
+    if (count < n) {
+        printf("%s\n", message);
+        count++;
+        
+        longjmp(jumpBuffer, 1);
+    } else {
+        longjmp(jumpBuffer, 0);
+    }
+}
+B)
+#include <stdio.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <time.h>
+
+void displayFilesInMonth(const char* directoryPath, int month);
+
+int main() {
+    const char* directoryPath = "."; // Replace with the desired directory path
+    int targetMonth = 9; // Replace with the desired month (1-12)
+    
+    displayFilesInMonth(directoryPath, targetMonth);
+    
+    return 0;
+}
+
+void displayFilesInMonth(const char* directoryPath, int month) {
+    DIR* directory;
+    struct dirent* entry;
+    
+    directory = opendir(directoryPath);
+    
+    if (directory == NULL) {
+        perror("Error opening directory");
+        return;
+    }
+    
+    while ((entry = readdir(directory)) != NULL) {
+        if (entry->d_type == DT_REG) { // Check if it is a regular file
+            char filePath[256];
+            snprintf(filePath, sizeof(filePath), "%s/%s", directoryPath, entry->d_name);
+            
+            struct stat fileStat;
+            
+            if (stat(filePath, &fileStat) == -1) {
+                perror("Error getting file information");
+                continue;
+            }
+            
+            struct tm* timeInfo = localtime(&fileStat.st_mtime);
+            int fileMonth = timeInfo->tm_mon + 1; // Months are 0-based
+            
+            if (fileMonth == month) {
+                printf("%s\n", entry->d_name);
+            }
+        }
+    }
+    
+    closedir(directory);
+}

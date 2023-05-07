@@ -1,0 +1,120 @@
+A)
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/resource.h>
+
+void display_resource_limit(int resource) {
+    struct rlimit limit;
+
+    // Retrieve the current resource limit
+    if (getrlimit(resource, &limit) == -1) {
+        perror("getrlimit");
+        return;
+    }
+
+    // Display the resource limit information
+    printf("Resource Limit:\n");
+    printf("  Soft Limit: %ld\n", limit.rlim_cur);
+    printf("  Hard Limit: %ld\n", limit.rlim_max);
+}
+
+void set_resource_limit(int resource, rlim_t soft_limit, rlim_t hard_limit) {
+    struct rlimit limit;
+
+    // Set the resource limit values
+    limit.rlim_cur = soft_limit;
+    limit.rlim_max = hard_limit;
+
+    // Set the new resource limit
+    if (setrlimit(resource, &limit) == -1) {
+        perror("setrlimit");
+        return;
+    }
+
+    printf("Resource limit set successfully.\n");
+}
+
+int main() {
+    // Display current resource limits
+    printf("Current Resource Limits:\n");
+    display_resource_limit(RLIMIT_NOFILE); // Maximum number of open file descriptors
+    display_resource_limit(RLIMIT_STACK); // Maximum stack size
+
+    // Set new resource limits
+    printf("\nSetting New Resource Limits:\n");
+    set_resource_limit(RLIMIT_NOFILE, 1000, 2000); // Set maximum number of open file descriptors
+    set_resource_limit(RLIMIT_STACK, 1024 * 1024, 2 * 1024 * 1024); // Set stack size limits
+
+    // Display updated resource limits
+    printf("\nUpdated Resource Limits:\n");
+    display_resource_limit(RLIMIT_NOFILE);
+    display_resource_limit(RLIMIT_STACK);
+
+    return 0;
+}
+B)
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+
+typedef struct {
+    char *name;
+    off_t size;
+} FileInfo;
+
+void bubble_sort(FileInfo *files, int num_files) {
+    int i, j;
+    for (i = 0; i < num_files - 1; i++) {
+        for (j = 0; j < num_files - i - 1; j++) {
+            if (files[j].size > files[j + 1].size) {
+                // Swap file names
+                char *temp_name = files[j].name;
+                files[j].name = files[j + 1].name;
+                files[j + 1].name = temp_name;
+                // Swap file sizes
+                off_t temp_size = files[j].size;
+                files[j].size = files[j + 1].size;
+                files[j + 1].size = temp_size;
+            }
+        }
+    }
+}
+
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        printf("Usage: %s <file1> <file2> ...\n", argv[0]);
+        return 1;
+    }
+
+    int num_files = argc - 1;
+    FileInfo *files = malloc(num_files * sizeof(FileInfo));
+    if (files == NULL) {
+        perror("malloc");
+        return 1;
+    }
+
+    // Retrieve file sizes
+    for (int i = 0; i < num_files; i++) {
+        struct stat file_stat;
+        if (stat(argv[i + 1], &file_stat) == -1) {
+            perror("stat");
+            free(files);
+            return 1;
+        }
+        files[i].name = argv[i + 1];
+        files[i].size = file_stat.st_size;
+    }
+
+    // Sort files based on size
+    bubble_sort(files, num_files);
+
+    // Display sorted file names
+    printf("Sorted File Names:\n");
+    for (int i = 0; i < num_files; i++) {
+        printf("%s\n", files[i].name);
+    }
+
+    free(files);
+
+    return 0;
+}

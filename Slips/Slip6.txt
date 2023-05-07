@@ -1,0 +1,144 @@
+A)
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <unistd.h>
+
+void displayFileInReverse(char* mappedFile, off_t fileSize) {
+    // Start from the end of the file and print each character in reverse order
+    for (off_t i = fileSize - 1; i >= 0; i--) {
+        putchar(mappedFile[i]);
+    }
+}
+
+int main() {
+    const char* filePath = "example.txt"; // Replace with your file path
+
+    int fileDescriptor = open(filePath, O_RDONLY);
+    if (fileDescriptor == -1) {
+        perror("open");
+        return 1;
+    }
+
+    struct stat fileStat;
+    if (fstat(fileDescriptor, &fileStat) == -1) {
+        perror("fstat");
+        close(fileDescriptor);
+        return 1;
+    }
+
+    off_t fileSize = fileStat.st_size;
+
+    // Map the file into memory
+    char* mappedFile = mmap(NULL, fileSize, PROT_READ, MAP_PRIVATE, fileDescriptor, 0);
+    if (mappedFile == MAP_FAILED) {
+        perror("mmap");
+        close(fileDescriptor);
+        return 1;
+    }
+
+    // Display the mapped file in reverse
+    displayFileInReverse(mappedFile, fileSize);
+
+    // Unmap the file from memory
+    if (munmap(mappedFile, fileSize) == -1) {
+        perror("munmap");
+    }
+
+    close(fileDescriptor);
+
+    return 0;
+}
+B)
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <dirent.h>
+#include <sys/stat.h>
+
+void list_files(char *dirname, int print_name, int print_inode) {
+    DIR *dir;
+    struct dirent *entry;
+    struct stat file_stat;
+
+    dir = opendir(dirname);
+    if (dir == NULL) {
+        printf("Error opening directory: %s\n", dirname);
+        return;
+    }
+
+    while ((entry = readdir(dir)) != NULL) {
+        char path[256];
+        snprintf(path, sizeof(path), "%s/%s", dirname, entry->d_name);
+
+        if (stat(path, &file_stat) == 0) {
+            if (S_ISREG(file_stat.st_mode)) {
+                if (print_name) {
+                    printf("%s\n", entry->d_name);
+                }
+                if (print_inode) {
+                    printf("%s - inode: %ld\n", entry->d_name, (long)file_stat.st_ino);
+                }
+            }
+        }
+    }
+
+    closedir(dir);
+}
+
+int main() {
+    char command[256];
+    char *token;
+
+    while (1) {
+        printf("NewShell$ ");
+        fgets(command, sizeof(command), stdin);
+
+        // Remove trailing newline character
+        command[strcspn(command, "\n")] = '\0';
+
+        // Tokenize the command
+        token = strtok(command, " ");
+
+        if (strcmp(token, "list") == 0) {
+            token = strtok(NULL, " ");
+            if (token != NULL) {
+                if (strcmp(token, "f") == 0) {
+                    token = strtok(NULL, " ");
+                    if (token != NULL) {
+                        list_files(token, 1, 0);
+                    } else {
+                        printf("Missing directory name.\n");
+                    }
+                } else if (strcmp(token, "n") == 0) {
+                    token = strtok(NULL, " ");
+                    if (token != NULL) {
+                        list_files(token, 0, 0);
+                    } else {
+                        printf("Missing directory name.\n");
+                    }
+                } else if (strcmp(token, "i") == 0) {
+                    token = strtok(NULL, " ");
+                    if (token != NULL) {
+                        list_files(token, 0, 1);
+                    } else {
+                        printf("Missing directory name.\n");
+                    }
+                } else {
+                    printf("Invalid list command.\n");
+                }
+            } else {
+                printf("Missing list command parameters.\n");
+            }
+        } else {
+            // Execute other shell commands
+            system(command);
+        }
+    }
+
+    return 0;
+}

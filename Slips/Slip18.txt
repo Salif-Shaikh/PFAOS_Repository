@@ -1,0 +1,122 @@
+A)
+#include <stdio.h>
+#include <sys/stat.h>
+#include <time.h>
+
+void displayFileTimes(const char* filename);
+
+int main() {
+    const char* filename = "path_to_file"; // Replace with the actual file path
+    
+    displayFileTimes(filename);
+    
+    return 0;
+}
+
+void displayFileTimes(const char* filename) {
+    struct stat fileStat;
+    
+    if (stat(filename, &fileStat) == -1) {
+        perror("Error");
+        return;
+    }
+    
+    struct tm* accessTimeInfo = localtime(&fileStat.st_atime);
+    struct tm* modifiedTimeInfo = localtime(&fileStat.st_mtime);
+    
+    char accessTimeStr[20];
+    strftime(accessTimeStr, sizeof(accessTimeStr), "%Y-%m-%d %H:%M:%S", accessTimeInfo);
+    
+    char modifiedTimeStr[20];
+    strftime(modifiedTimeStr, sizeof(modifiedTimeStr), "%Y-%m-%d %H:%M:%S", modifiedTimeInfo);
+    
+    printf("Last access time: %s\n", accessTimeStr);
+    printf("Last modified time: %s\n", modifiedTimeStr);
+}
+B)
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <signal.h>
+
+void signalHandler(int signum) {
+    // Do nothing to block the signal
+}
+
+int main() {
+    // Block SIGINT and SIGQUIT signals
+    signal(SIGINT, signalHandler);
+    signal(SIGQUIT, signalHandler);
+
+    int pipefd[2];
+    pid_t pid1, pid2;
+
+    if (pipe(pipefd) == -1) {
+        perror("Pipe creation failed.");
+        exit(1);
+    }
+
+    pid1 = fork();
+
+    if (pid1 < 0) {
+        perror("Fork failed.");
+        exit(1);
+    } else if (pid1 == 0) {
+        // Child process 1 - execute "ls -l"
+
+        // Close unused read end of the pipe
+        close(pipefd[0]);
+
+        // Redirect stdout to the write end of the pipe
+        dup2(pipefd[1], STDOUT_FILENO);
+
+        // Close the write end of the pipe
+        close(pipefd[1]);
+
+        // Execute "ls -l" command
+        execlp("ls", "ls", "-l", NULL);
+
+        // exec failed if reached here
+        perror("Error executing command.");
+        exit(1);
+    } else {
+        pid2 = fork();
+
+        if (pid2 < 0) {
+            perror("Fork failed.");
+            exit(1);
+        } else if (pid2 == 0) {
+            // Child process 2 - execute "wc -l"
+
+            // Close unused write end of the pipe
+            close(pipefd[1]);
+
+            // Redirect stdin to the read end of the pipe
+            dup2(pipefd[0], STDIN_FILENO);
+
+            // Close the read end of the pipe
+            close(pipefd[0]);
+
+            // Execute "wc -l" command
+            execlp("wc", "wc", "-l", NULL);
+
+            // exec failed if reached here
+            perror("Error executing command.");
+            exit(1);
+        } else {
+            // Parent process
+
+            // Close both ends of the pipe
+            close(pipefd[0]);
+            close(pipefd[1]);
+
+            // Wait for child processes to complete
+            wait(NULL);
+            wait(NULL);
+        }
+    }
+
+    return 0;
+}
